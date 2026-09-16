@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CineStream - Watch Movies Online</title>
+<style>
+  :root {
+    --bg-primary: #0a0a12;
+    --bg-secondary: #14141f;
+    --bg-card: #1a1a28;
+    --accent: #e50914;
+    --accent-glow: #ff2d3a;
+    --accent-gradient: linear-gradient(135deg, #e50914, #ff5e3a);
+    --text-primary: #f5f5f7;
+    --text-secondary: #a0a0b0;
+    --border: rgba(255,255,255,0.08);
+    --shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: radial-gradient(ellipse at top, #1a0f14 0%, #0a0a12 60%);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ---------- HEADER ---------- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,18,0.85);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo::before {
+    content: "🎬";
+    -webkit-text-fill-color: initial;
+    font-size: 22px;
+  }
+
+  .search-box {
+    flex: 1;
+    max-width: 420px;
+    position: relative;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 11px 16px 11px 40px;
+    border-radius: 30px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: 0.25s;
+  }
+  .search-box input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(229,9,20,0.2);
+  }
+  .search-box::before {
+    content: "🔍";
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.6;
+  }
+
+  .categories {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cat-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s;
+    white-space: nowrap;
+  }
+  .cat-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+  .cat-btn.active {
+    background: var(--accent-gradient);
+    color: white;
+    border-color: transparent;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    padding: 60px 24px 30px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 34px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+  }
+  .hero p { color: var(--text-secondary); font-size: 15px; }
+
+  /* ---------- GRID ---------- */
+  .container { max-width: 1300px; margin: 0 auto; padding: 20px 24px 60px; }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 20px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: "";
+    width: 5px;
+    height: 20px;
+    background: var(--accent-gradient);
+    border-radius: 3px;
+  }
+
+  .movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 22px;
+  }
+
+  .movie-card {
+    background: var(--bg-card);
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    position: relative;
+  }
+  .movie-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow);
+    border-color: rgba(229,9,20,0.4);
+  }
+
+  .poster-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: #222;
+    overflow: hidden;
+  }
+  .poster-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s;
+  }
+  .movie-card:hover .poster-wrap img { transform: scale(1.08); }
+
+  .play-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .movie-card:hover .play-overlay { opacity: 1; }
+  .play-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 25px rgba(229,9,20,0.6);
+    transform: scale(0.8);
+    transition: transform 0.25s;
+  }
+  .movie-card:hover .play-icon { transform: scale(1); }
+  .play-icon::after {
+    content: "";
+    border-style: solid;
+    border-width: 9px 0 9px 15px;
+    border-color: transparent transparent transparent white;
+    margin-left: 4px;
+  }
+
+  .year-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    backdrop-filter: blur(4px);
+  }
+  .cat-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--accent-gradient);
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .movie-info { padding: 12px 14px 16px; }
+  .movie-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .movie-meta { font-size: 12px; color: var(--text-secondary); }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-secondary);
+  }
+  .empty-state .icon { font-size: 50px; margin-bottom: 12px; }
+
+  /* ---------- PLAYER MODAL ---------- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    backdrop-filter: blur(6px);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .player-modal {
+    width: 100%;
+    max-width: 980px;
+    background: linear-gradient(160deg, #16161f, #0d0d14);
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 25px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(229,9,20,0.15);
+    animation: slideUp 0.3s ease;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+  }
+  @keyframes slideUp { from { transform: translateY(30px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+
+  .player-frame-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    overflow: hidden;
+  }
+  .player-frame-wrap iframe,
+  .player-frame-wrap embed,
+  .player-frame-wrap video,
+  .player-frame-wrap object {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute;
+    inset: 0;
+    border: none;
+    background: #000;
+  }
+
+  .player-frame-wrap video {
+    object-fit: contain;
+    background: #000;
+  }
+
+  .video-status {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    gap: 12px;
+    background: #000;
+    text-align: center;
+    padding: 20px;
+    z-index: 2;
+  }
+  .video-status .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(255,255,255,0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  .video-status .icon { font-size: 36px; }
+  .video-status .retry-btn {
+    margin-top: 6px;
+    padding: 9px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .video-status .retry-btn:hover { border-color: var(--accent); }
+
+  .close-btn {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    border: 3px solid var(--bg-primary);
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(229,9,20,0.5);
+    transition: transform 0.2s;
+  }
+  .close-btn:hover { transform: rotate(90deg) scale(1.1); }
+
+  .player-details {
+    padding: 22px 26px 26px;
+    overflow-y: auto;
+  }
+  .player-details h2 { font-size: 22px; margin-bottom: 8px; }
+  .player-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .player-tags span {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .player-details p.desc {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-size: 14px;
+  }
+
+  /* Loading state */
+  .loader {
+    text-align: center;
+    padding: 80px 0;
+    color: var(--text-secondary);
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 24px; }
+    header { padding: 12px 16px; }
+    .movie-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 14px; }
+    .player-details { padding: 16px 18px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CineStream</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="ရုပ်ရှင်အမည်ဖြင့်ရှာပါ..." />
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Watch Movies Anytime, Anywhere</h1>
+  <p>အသစ်ဆုံးရုပ်ရှင်များနှင့် စိတ်ကြိုက်ရွေးချယ်ကြည့်ရှုနိုင်ပါသည်</p>
+</div>
+
+<div class="container">
+  <div class="categories" id="categoryBar">
+    <button class="cat-btn active" data-cat="all">အားလုံး</button>
+  </div>
+
+  <h2 class="section-title" id="sectionTitle">ရုပ်ရှင်များ</h2>
+  <div id="movieGrid" class="movie-grid">
+    <div class="loader"><div class="spinner"></div>Loading movies...</div>
+  </div>
+</div>
+
+<footer>© 2026 CineStream. Movies embedded from external sources.</footer>
+
+<!-- Player Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="player-modal">
+    <div style="position:relative;">
+      <button class="close-btn" id="closeModal">✕</button>
+      <div class="player-frame-wrap" id="playerFrame"></div>
+    </div>
+    <div class="player-details">
+      <h2 id="modalTitle"></h2>
+      <div class="player-tags">
+        <span id="modalYear"></span>
+        <span id="modalCategory"></span>
+      </div>
+      <p class="desc" id="modalDesc"></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<script>
+  // ⚠️ Replace with your deployed Google Apps Script Web App URL
+  const API_URL = "https://script.google.com/macros/s/AKfycbyvOijucBhPuQSLCUA3lt_TpfyjbyblTdG-2GRmMeZWW609l8Vemrv8xA9Qu1D21hNLCw/exec";
+
+  let allMovies = [];
+  let currentCategory = "all";
+
+  async function fetchMovies() {
+    try {
+      const res = await fetch(`${API_URL}?action=list`);
+      const data = await res.json();
+      allMovies = Array.isArray(data) ? data : [];
+      buildCategories();
+      renderMovies();
+    } catch (err) {
+      document.getElementById("movieGrid").innerHTML =
+        `<div class="empty-state"><div class="icon">⚠️</div><p>Movies များ load လုပ်၍ မရပါ။ API_URL ကို စစ်ဆေးပါ။</p></div>`;
+      console.error(err);
+    }
+  }
+
+  function buildCategories() {
+    const cats = [...new Set(allMovies.map(m => m.category).filter(Boolean))];
+    const bar = document.getElementById("categoryBar");
+    bar.innerHTML = `<button class="cat-btn active" data-cat="all">အားလုံး</button>`;
+    cats.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.className = "cat-btn";
+      btn.dataset.cat = cat;
+      btn.textContent = cat;
+      bar.appendChild(btn);
+    });
+    bar.querySelectorAll(".cat-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        bar.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentCategory = btn.dataset.cat;
+        renderMovies();
+      });
+    });
+  }
+
+  function renderMovies() {
+    const grid = document.getElementById("movieGrid");
+    const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
+
+    let filtered = allMovies.filter(m => {
+      const matchCat = currentCategory === "all" || m.category === currentCategory;
+      const matchSearch = !searchTerm || (m.title || "").toLowerCase().includes(searchTerm);
+      return matchCat && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><div class="icon">🎬</div><p>ရုပ်ရှင်များ မတွေ့ပါ</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(m => `
+      <div class="movie-card" onclick="openPlayer('${m.id}')">
+        <div class="poster-wrap">
+          <span class="cat-badge">${escapeHtml(m.category || "")}</span>
+          <span class="year-badge">${escapeHtml(m.year || "")}</span>
+          <img src="${escapeHtml(m.poster || 'https://via.placeholder.com/300x450/1a1a28/e50914?text=No+Image')}" alt="${escapeHtml(m.title)}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x450/1a1a28/e50914?text=No+Image'"/>
+          <div class="play-overlay"><div class="play-icon"></div></div>
+        </div>
+        <div class="movie-info">
+          <div class="movie-title">${escapeHtml(m.title || "Untitled")}</div>
+          <div class="movie-meta">${escapeHtml(m.category || "")} • ${escapeHtml(m.year || "")}</div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  let currentHls = null;
+  let currentMovie = null;
+
+  function openPlayer(id) {
+    const movie = allMovies.find(m => String(m.id) === String(id));
+    if (!movie) return;
+    currentMovie = movie;
+
+    document.getElementById("modalTitle").textContent = movie.title || "";
+    document.getElementById("modalYear").textContent = movie.year || "";
+    document.getElementById("modalCategory").textContent = movie.category || "";
+    document.getElementById("modalDesc").textContent = movie.description || "";
+
+    loadVideo(movie.embedCode || "");
+
+    document.getElementById("modalOverlay").classList.add("active");
+    document.body.style.overflow = "hidden";
+  }
+
+  function loadVideo(url) {
+    const frame = document.getElementById("playerFrame");
+    cleanupPlayer();
+
+    url = (url || "").trim();
+    if (!url) {
+      frame.innerHTML = `<div class="video-status"><div class="icon">🚫</div><span>Video link မတွေ့ပါ</span></div>`;
+      return;
+    }
+
+    const posterUrl = (currentMovie && currentMovie.poster) || "";
+    frame.innerHTML = `
+      <video id="mainVideo" controls playsinline preload="metadata" ${posterUrl ? `poster="${escapeHtml(posterUrl)}"` : ""}></video>
+      <div class="video-status" id="videoStatus"><div class="spinner"></div><span>Loading video...</span></div>
+    `;
+    const video = document.getElementById("mainVideo");
+    const status = document.getElementById("videoStatus");
+
+    const hideStatus = () => { if (status) status.remove(); };
+    const showError = (msg) => {
+      frame.innerHTML = `
+        <div class="video-status">
+          <div class="icon">⚠️</div>
+          <span>${escapeHtml(msg)}</span>
+          <button class="retry-btn" onclick="loadVideo('${escapeHtml(url).replace(/'/g, "\\'")}')">↻ ပြန်ကြိုးစားမည်</button>
+        </div>`;
+    };
+
+    video.addEventListener("canplay", hideStatus, { once: true });
+    video.addEventListener("playing", hideStatus, { once: true });
+    video.addEventListener("error", () => {
+      showError("Video ကို ဖွင့်၍မရပါ။ Link ကို စစ်ဆေးပါ");
+    });
+
+    const isM3u8 = /\.m3u8($|\?)/i.test(url);
+    const canPlayNativeHls = video.canPlayType("application/vnd.apple.mpegurl");
+
+    try {
+      if (isM3u8 && window.Hls && Hls.isSupported() && !canPlayNativeHls) {
+        const hls = new Hls();
+        currentHls = hls;
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(() => {});
+        });
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data && data.fatal) {
+            showError("Video stream ချိတ်ဆက်၍မရပါ");
+          }
+        });
+      } else {
+        video.src = url;
+        video.play().catch(() => { hideStatus(); }); // autoplay may be blocked; controls still work
+      }
+    } catch (err) {
+      showError("Video ကို load လုပ်၍မရပါ");
+    }
+  }
+
+  function cleanupPlayer() {
+    if (currentHls) {
+      try { currentHls.destroy(); } catch (e) {}
+      currentHls = null;
+    }
+  }
+
+  function closePlayer() {
+    document.getElementById("modalOverlay").classList.remove("active");
+    cleanupPlayer();
+    document.getElementById("playerFrame").innerHTML = ""; // stop video playback
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("closeModal").addEventListener("click", closePlayer);
+  document.getElementById("modalOverlay").addEventListener("click", (e) => {
+    if (e.target.id === "modalOverlay") closePlayer();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closePlayer();
+  });
+
+  document.getElementById("searchInput").addEventListener("input", renderMovies);
+
+  function escapeHtml(str) {
+    if (str === undefined || str === null) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  fetchMovies();
+</script>
+
+</body>
+</html>
